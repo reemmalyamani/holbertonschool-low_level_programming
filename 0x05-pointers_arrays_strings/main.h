@@ -1,7 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-int _isupper(int c);
-int _isdigit(int c);
+void reset_to_98(int *n);
+int _putchar(char c);
 
 #endif /* MAIN_H */
