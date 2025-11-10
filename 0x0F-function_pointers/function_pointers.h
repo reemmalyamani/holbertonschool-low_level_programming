@@ -6,7 +6,7 @@
 /**
  * print_name - calls a function to print a name
  * @name: string to print
- * @f: function pointer to a printer that takes (char *)
+ * @f: pointer to a function that takes a char * and returns void
  */
 void print_name(char *name, void (*f)(char *));
 
