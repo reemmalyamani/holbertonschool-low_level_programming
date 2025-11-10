@@ -4,9 +4,9 @@
 #include <stddef.h>
 
 /**
- * print_name - prints a name
- * @name: the name to be printed
- * @f: pointer to a function that prints a name
+ * print_name - calls a function to print a name
+ * @name: string to print
+ * @f: function pointer to a printer that takes (char *)
  */
 void print_name(char *name, void (*f)(char *));
 
