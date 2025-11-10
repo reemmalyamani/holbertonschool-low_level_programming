@@ -2,6 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/**
+ * main - performs simple arithmetic
+ * @argc: argument count
+ * @argv: argument vector
+ *
+ * Return: result of the operation, or exits with error codes:
+ *         98 - wrong number of arguments
+ *         99 - invalid operator
+ *         100 - division by zero
+ */
 int main(int argc, char *argv[])
 {
 	int num1, num2;
