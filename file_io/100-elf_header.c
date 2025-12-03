@@ -4,56 +4,55 @@
 #include <fcntl.h>
 #include <elf.h>
 
-uint16_t swap16(uint16_t val)
+uint16_t swap16(uint16_t v)
 {
-    return (val << 8) | (val >> 8);
+    return (v << 8) | (v >> 8);
 }
 
-uint32_t swap32(uint32_t val)
+uint32_t swap32(uint32_t v)
 {
-    return ((val & 0x000000FF) << 24) |
-           ((val & 0x0000FF00) << 8) |
-           ((val & 0x00FF0000) >> 8) |
-           ((val & 0xFF000000) >> 24);
+    return ((v & 0x000000FF) << 24) |
+           ((v & 0x0000FF00) << 8) |
+           ((v & 0x00FF0000) >> 8) |
+           ((v & 0xFF000000) >> 24);
 }
 
-uint64_t swap64(uint64_t val)
+uint64_t swap64(uint64_t v)
 {
-    uint64_t b0, b1, b2, b3, b4, b5, b6, b7;
+    uint64_t r;
+    unsigned char *p = (unsigned char *)&v;
 
-    b0 = (val & 0x00000000000000FFULL) << 56;
-    b1 = (val & 0x000000000000FF00ULL) << 40;
-    b2 = (val & 0x0000000000FF0000ULL) << 24;
-    b3 = (val & 0x00000000FF000000ULL) << 8;
-    b4 = (val & 0x000000FF00000000ULL) >> 8;
-    b5 = (val & 0x0000FF0000000000ULL) >> 24;
-    b6 = (val & 0x00FF000000000000ULL) >> 40;
-    b7 = (val & 0xFF00000000000000ULL) >> 56;
-
-    return b0 | b1 | b2 | b3 | b4 | b5 | b6 | b7;
+    r = ((uint64_t)p[0] << 56) |
+        ((uint64_t)p[1] << 48) |
+        ((uint64_t)p[2] << 40) |
+        ((uint64_t)p[3] << 32) |
+        ((uint64_t)p[4] << 24) |
+        ((uint64_t)p[5] << 16) |
+        ((uint64_t)p[6] << 8)  |
+        ((uint64_t)p[7]);
+    return r;
 }
 
-void print_error(const char *msg)
+void error(const char *m)
 {
-    dprintf(STDERR_FILENO, "%s\n", msg);
+    dprintf(STDERR_FILENO, "%s\n", m);
     exit(98);
 }
 
-void print_magic(unsigned char *e_ident)
+void print_magic(unsigned char *id)
 {
     int i;
 
     printf("  Magic:   ");
     for (i = 0; i < EI_NIDENT; i++)
-        printf("%02x ", e_ident[i]);
+        printf("%02x ", id[i]);
     printf("\n");
 }
 
-void print_osabi(unsigned char osabi)
+void print_osabi(unsigned char v)
 {
     printf("  OS/ABI:                            ");
-
-    switch (osabi)
+    switch (v)
     {
         case ELFOSABI_SYSV:       printf("UNIX - System V\n"); break;
         case ELFOSABI_HPUX:       printf("HP-UX\n"); break;
@@ -65,130 +64,118 @@ void print_osabi(unsigned char osabi)
         case ELFOSABI_TRU64:      printf("UNIX - TRU64\n"); break;
         case ELFOSABI_ARM:        printf("ARM\n"); break;
         case ELFOSABI_STANDALONE: printf("Standalone App\n"); break;
-        default:                  printf("<unknown: %x>\n", osabi);
+        default:                  printf("<unknown: %x>\n", v);
     }
 }
 
-int main(int argc, char **argv)
+int main(int ac, char **av)
 {
     int fd;
-    unsigned char ident[EI_NIDENT];
-    Elf64_Ehdr header64;
-    Elf32_Ehdr header32;
-    int elf_class, endian;
+    unsigned char id[EI_NIDENT];
     ssize_t r;
+    int cls, end;
+    Elf64_Ehdr h64;
+    Elf32_Ehdr h32;
 
-    if (argc != 2)
-        print_error("Usage: elf_header elf_filename");
+    if (ac != 2)
+        error("Usage: elf_header elf_filename");
 
-    fd = open(argv[1], O_RDONLY);
+    fd = open(av[1], O_RDONLY);
     if (fd == -1)
-        print_error("Error: Can't read file");
+        error("Error: Can't read file");
 
-    r = read(fd, ident, EI_NIDENT);
+    r = read(fd, id, EI_NIDENT);
     if (r != EI_NIDENT)
-        print_error("Error: Can't read ELF header");
+        error("Error: Can't read ELF header");
 
-    if (ident[EI_MAG0] != ELFMAG0 ||
-        ident[EI_MAG1] != ELFMAG1 ||
-        ident[EI_MAG2] != ELFMAG2 ||
-        ident[EI_MAG3] != ELFMAG3)
-        print_error("Error: Not an ELF file");
+    if (id[EI_MAG0] != ELFMAG0 ||
+        id[EI_MAG1] != ELFMAG1 ||
+        id[EI_MAG2] != ELFMAG2 ||
+        id[EI_MAG3] != ELFMAG3)
+        error("Error: Not an ELF file");
 
     printf("ELF Header:\n");
-    print_magic(ident);
+    print_magic(id);
 
-    elf_class = ident[EI_CLASS];
-    endian = ident[EI_DATA];
+    cls = id[EI_CLASS];
+    end = id[EI_DATA];
 
     printf("  Class:                             ");
-    if (elf_class == ELFCLASS32)
-        printf("ELF32\n");
-    else if (elf_class == ELFCLASS64)
-        printf("ELF64\n");
-    else
-        printf("<unknown: %x>\n", elf_class);
+    if (cls == ELFCLASS32) printf("ELF32\n");
+    else if (cls == ELFCLASS64) printf("ELF64\n");
+    else printf("<unknown: %x>\n", cls);
 
     printf("  Data:                              ");
-    if (endian == ELFDATA2LSB)
-        printf("2's complement, little endian\n");
-    else if (endian == ELFDATA2MSB)
-        printf("2's complement, big endian\n");
-    else
-        printf("<unknown: %x>\n", endian);
+    if (end == ELFDATA2LSB) printf("2's complement, little endian\n");
+    else if (end == ELFDATA2MSB) printf("2's complement, big endian\n");
+    else printf("<unknown: %x>\n", end);
 
-    printf("  Version:                           %d", ident[EI_VERSION]);
-    if (ident[EI_VERSION] == EV_CURRENT)
+    printf("  Version:                           %d", id[EI_VERSION]);
+    if (id[EI_VERSION] == EV_CURRENT)
         printf(" (current)");
     printf("\n");
 
-    print_osabi(ident[EI_OSABI]);
+    print_osabi(id[EI_OSABI]);
 
-    printf("  ABI Version:                       %d\n", ident[EI_ABIVERSION]);
+    printf("  ABI Version:                       %d\n", id[EI_ABIVERSION]);
 
     if (lseek(fd, 0, SEEK_SET) == -1)
-        print_error("Error: Can't lseek");
+        error("Error: Can't lseek");
 
-    if (elf_class == ELFCLASS64)
+    if (cls == ELFCLASS64)
     {
-        uint16_t type;
-        uint64_t entry;
+        uint16_t t;
+        uint64_t e;
 
-        r = read(fd, &header64, sizeof(header64));
-        if (r != sizeof(header64))
-            print_error("Error: Can't read ELF64 header");
+        r = read(fd, &h64, sizeof(h64));
+        if (r != sizeof(h64))
+            error("Error: Can't read ELF64 header");
 
-        type = header64.e_type;
-        if (endian == ELFDATA2MSB)
-            type = swap16(type);
+        t = h64.e_type;
+        if (end == ELFDATA2MSB)
+            t = swap16(t);
 
         printf("  Type:                              ");
-        switch (type)
-        {
-            case ET_NONE: printf("NONE (Unknown type)\n"); break;
-            case ET_REL:  printf("REL (Relocatable file)\n"); break;
-            case ET_EXEC: printf("EXEC (Executable file)\n"); break;
-            case ET_DYN:  printf("DYN (Shared object file)\n"); break;
-            case ET_CORE: printf("CORE (Core file)\n"); break;
-            default:      printf("<unknown: %x>\n", type);
-        }
+        if (t == ET_NONE) printf("NONE (Unknown type)\n");
+        else if (t == ET_REL) printf("REL (Relocatable file)\n");
+        else if (t == ET_EXEC) printf("EXEC (Executable file)\n");
+        else if (t == ET_DYN) printf("DYN (Shared object file)\n");
+        else if (t == ET_CORE) printf("CORE (Core file)\n");
+        else printf("<unknown: %x>\n", t);
 
-        entry = header64.e_entry;
-        if (endian == ELFDATA2MSB)
-            entry = swap64(entry);
+        e = h64.e_entry;
+        if (end == ELFDATA2MSB)
+            e = swap64(e);
 
         printf("  Entry point address:               %#lx\n",
-               (unsigned long)entry);
+               (unsigned long)e);
     }
     else
     {
-        uint16_t type;
-        uint32_t entry;
+        uint16_t t;
+        uint32_t e;
 
-        r = read(fd, &header32, sizeof(header32));
-        if (r != sizeof(header32))
-            print_error("Error: Can't read ELF32 header");
+        r = read(fd, &h32, sizeof(h32));
+        if (r != sizeof(h32))
+            error("Error: Can't read ELF32 header");
 
-        type = header32.e_type;
-        if (endian == ELFDATA2MSB)
-            type = swap16(type);
+        t = h32.e_type;
+        if (end == ELFDATA2MSB)
+            t = swap16(t);
 
         printf("  Type:                              ");
-        switch (type)
-        {
-            case ET_NONE: printf("NONE (Unknown type)\n"); break;
-            case ET_REL:  printf("REL (Relocatable file)\n"); break;
-            case ET_EXEC: printf("EXEC (Executable file)\n"); break;
-            case ET_DYN:  printf("DYN (Shared object file)\n"); break;
-            case ET_CORE: printf("CORE (Core file)\n"); break;
-            default:      printf("<unknown: %x>\n", type);
-        }
+        if (t == ET_NONE) printf("NONE (Unknown type)\n");
+        else if (t == ET_REL) printf("REL (Relocatable file)\n");
+        else if (t == ET_EXEC) printf("EXEC (Executable file)\n");
+        else if (t == ET_DYN) printf("DYN (Shared object file)\n");
+        else if (t == ET_CORE) printf("CORE (Core file)\n");
+        else printf("<unknown: %x>\n", t);
 
-        entry = header32.e_entry;
-        if (endian == ELFDATA2MSB)
-            entry = swap32(entry);
+        e = h32.e_entry;
+        if (end == ELFDATA2MSB)
+            e = swap32(e);
 
-        printf("  Entry point address:               %#x\n", entry);
+        printf("  Entry point address:               %#x\n", e);
     }
 
     close(fd);
