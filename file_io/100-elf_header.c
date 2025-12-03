@@ -1,4 +1,4 @@
-k#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -20,6 +20,7 @@ uint32_t swap32(uint32_t v)
 uint64_t swap64(uint64_t v)
 {
     unsigned char *p = (unsigned char *)&v;
+
     return ((uint64_t)p[0] << 56) |
            ((uint64_t)p[1] << 48) |
            ((uint64_t)p[2] << 40) |
@@ -49,6 +50,7 @@ void print_magic(unsigned char *id)
 void print_osabi(unsigned char v)
 {
     printf("  OS/ABI:                            ");
+
     switch (v)
     {
         case ELFOSABI_SYSV:       printf("UNIX - System V\n"); break;
@@ -61,6 +63,12 @@ void print_osabi(unsigned char v)
         case ELFOSABI_TRU64:      printf("UNIX - TRU64\n"); break;
         case ELFOSABI_ARM:        printf("ARM\n"); break;
         case ELFOSABI_STANDALONE: printf("Standalone App\n"); break;
+
+        /* Missing readelf OSABI constants (must include manually) */
+        case 12:                  printf("UNIX - OpenBSD\n"); break;   /* 0x0C */
+        case 17:                  printf("UNIX - CloudABI\n"); break;  /* 0x11 */
+        case 83:                  printf("UNIX - Sortix\n"); break;    /* 0x53 */
+
         default:                  printf("<unknown: %x>\n", v);
     }
 }
