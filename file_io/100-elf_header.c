@@ -1,4 +1,4 @@
-#include <stdio.h>
+k#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -19,18 +19,15 @@ uint32_t swap32(uint32_t v)
 
 uint64_t swap64(uint64_t v)
 {
-    uint64_t r;
     unsigned char *p = (unsigned char *)&v;
-
-    r = ((uint64_t)p[0] << 56) |
-        ((uint64_t)p[1] << 48) |
-        ((uint64_t)p[2] << 40) |
-        ((uint64_t)p[3] << 32) |
-        ((uint64_t)p[4] << 24) |
-        ((uint64_t)p[5] << 16) |
-        ((uint64_t)p[6] << 8)  |
-        ((uint64_t)p[7]);
-    return r;
+    return ((uint64_t)p[0] << 56) |
+           ((uint64_t)p[1] << 48) |
+           ((uint64_t)p[2] << 40) |
+           ((uint64_t)p[3] << 32) |
+           ((uint64_t)p[4] << 24) |
+           ((uint64_t)p[5] << 16) |
+           ((uint64_t)p[6] << 8)  |
+           ((uint64_t)p[7]);
 }
 
 void error(const char *m)
@@ -72,10 +69,10 @@ int main(int ac, char **av)
 {
     int fd;
     unsigned char id[EI_NIDENT];
-    ssize_t r;
-    int cls, end;
     Elf64_Ehdr h64;
     Elf32_Ehdr h32;
+    ssize_t r;
+    int cls, end;
 
     if (ac != 2)
         error("Usage: elf_header elf_filename");
@@ -136,7 +133,7 @@ int main(int ac, char **av)
             t = swap16(t);
 
         printf("  Type:                              ");
-        if (t == ET_NONE) printf("NONE (Unknown type)\n");
+        if (t == ET_NONE) printf("NONE (None)\n");
         else if (t == ET_REL) printf("REL (Relocatable file)\n");
         else if (t == ET_EXEC) printf("EXEC (Executable file)\n");
         else if (t == ET_DYN) printf("DYN (Shared object file)\n");
@@ -164,7 +161,7 @@ int main(int ac, char **av)
             t = swap16(t);
 
         printf("  Type:                              ");
-        if (t == ET_NONE) printf("NONE (Unknown type)\n");
+        if (t == ET_NONE) printf("NONE (None)\n");
         else if (t == ET_REL) printf("REL (Relocatable file)\n");
         else if (t == ET_EXEC) printf("EXEC (Executable file)\n");
         else if (t == ET_DYN) printf("DYN (Shared object file)\n");
